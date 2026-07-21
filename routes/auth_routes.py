@@ -1,11 +1,15 @@
-from fastapi import APIRouter
-from database.mongodb import users_collection
-from models.user_model import RegisterUser
-from auth.password_handler import hash_password
-from models.user_model import LoginUser
-from auth.password_handler import verify_password
-from auth.jwt_handler import create_access_token
+from fastapi import APIRouter, HTTPException
 
+from database.mongodb import users_collection
+
+from models.user_model import RegisterUser, LoginUser
+
+from auth.password_handler import (
+    hash_password,
+    verify_password
+)
+
+from auth.jwt_handler import create_access_token
 
 router = APIRouter()
 
@@ -14,13 +18,16 @@ router = APIRouter()
 def register(user: RegisterUser):
 
     existing = users_collection.find_one(
-        {"email": user.email}
+        {
+            "email": user.email
+        }
     )
 
     if existing:
-        return {
-            "message": "User already exists"
-        }
+        raise HTTPException(
+            status_code=400,
+            detail="User already exists"
+        )
 
     users_collection.insert_one({
 
@@ -28,15 +35,14 @@ def register(user: RegisterUser):
 
         "email": user.email,
 
-        "password":
-            hash_password(
-                user.password
-            )
+        "password": hash_password(
+            user.password
+        )
+
     })
 
     return {
-        "message":
-            "User created"
+        "message": "Registration successful"
     }
 
 
@@ -44,30 +50,40 @@ def register(user: RegisterUser):
 def login(user: LoginUser):
 
     db_user = users_collection.find_one(
-        {"email": user.email}
+        {
+            "email": user.email
+        }
     )
 
     if not db_user:
-        return {
-            "message": "Invalid credentials"
-        }
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid credentials"
+        )
 
     if not verify_password(
         user.password,
         db_user["password"]
     ):
-        return {
-            "message": "Invalid credentials"
-        }
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid credentials"
+        )
 
     token = create_access_token({
 
-        "id": str(db_user["_id"]),
+        "user_id": str(
+            db_user["_id"]
+        ),
 
-        "email":
-            db_user["email"]
+        "email": db_user["email"]
+
     })
 
     return {
-        "access_token": token
+
+        "access_token": token,
+
+        "token_type": "bearer"
+
     }

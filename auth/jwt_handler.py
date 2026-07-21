@@ -1,14 +1,15 @@
-import jwt
 from datetime import datetime, timedelta
 
-SECRET_KEY = "your_super_secret_key"
+from jose import jwt
 
-ALGORITHM = "HS256"
+from config import (
+    SECRET_KEY,
+    ALGORITHM,
+    ACCESS_TOKEN_EXPIRE_MINUTES
+)
 
-ACCESS_TOKEN_EXPIRE_MINUTES = 1440
 
-
-def create_access_token(data):
+def create_access_token(data: dict):
 
     payload = data.copy()
 

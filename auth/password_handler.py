@@ -1,16 +1,9 @@
-import hashlib
-import hmac
+from pwdlib import PasswordHash
 
+password_hash = PasswordHash.recommended()
 
-class CryptContext:
-	def __init__(self, *args, **kwargs):
-		pass
+def hash_password(password: str):
+    return password_hash.hash(password)
 
-	def hash(self, password: str) -> str:
-		return hashlib.sha256(password.encode("utf-8")).hexdigest()
-
-	def verify(self, password: str, hashed_password: str) -> bool:
-		return hmac.compare_digest(self.hash(password), hashed_password)
-
-
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+def verify_password(password: str, hashed_password: str):
+    return password_hash.verify(password, hashed_password)
