@@ -1,6 +1,7 @@
 from fastapi import Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer
 from jose import jwt, JWTError
+from bson import ObjectId
 
 from database.mongodb import users_collection
 from auth.jwt_handler import SECRET_KEY, ALGORITHM
@@ -31,7 +32,7 @@ def get_current_user(token: str = Depends(oauth2_scheme)):
         raise credentials_exception
 
     user = users_collection.find_one({
-        "_id": user_id
+        "_id": ObjectId(user_id)
     })
 
     if not user:
