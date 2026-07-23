@@ -7,3 +7,4 @@ client = MongoClient(MONGO_URI)
 db = client[DATABASE_NAME]
 
 users_collection = db["users"]
+documents_collection = db["documents"]

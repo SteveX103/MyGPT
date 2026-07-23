@@ -1,3 +1,0 @@
-user1: 
-"access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiNmE2MDZlMGYxYTk5NmY2ZTNhODI5Yjg2IiwiZW1haWwiOiJ1c2VyMUBnbWFpbC5jb20iLCJleHAiOjE3ODQ3MDgyMTB9.N8Tl0VE6BiQDCmdWadB1ZP1Ir375rhXwezWk4_QON10",
-    "token_type": "bearer"
