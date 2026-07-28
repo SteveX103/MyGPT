@@ -1,10 +1,12 @@
+import os
 from pathlib import Path
 from datetime import datetime
-
+from bson import ObjectId
 from fastapi import APIRouter, UploadFile, File, Depends, HTTPException
-
+from fastapi.responses import FileResponse
 from auth.dependencies import get_current_user
 from database.mongodb import documents_collection
+from models.document_model import RenameDocument
 
 router = APIRouter()
 
@@ -89,3 +91,118 @@ def list_documents(
         })
 
     return result
+@router.get("/{document_id}")
+def get_document(
+    document_id: str,
+    current_user=Depends(get_current_user)
+):
+
+    document = documents_collection.find_one(
+        {
+            "_id": ObjectId(document_id),
+            "user_id": str(current_user["_id"])
+        }
+    ) 
+
+    if document is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Document not found"
+        )
+
+    return {
+        "id": str(document["_id"]),
+        "filename": document["filename"],
+        "file_size": document["file_size"],
+        "content_type": document["content_type"],
+        "uploaded_at": document["uploaded_at"]
+    }
+@router.get("/{document_id}/download")
+def download_document(
+    document_id: str,
+    current_user=Depends(get_current_user)
+):
+
+    document = documents_collection.find_one(
+        {
+            "_id": ObjectId(document_id),
+            "user_id": str(current_user["_id"])
+        }
+    )
+
+    if document is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Document not found"
+        )
+
+    return FileResponse(
+        path=document["filepath"],
+        filename=document["filename"],
+        media_type=document["content_type"]
+    )
+@router.delete("/{document_id}")
+def delete_document(
+    document_id: str,
+    current_user=Depends(get_current_user)
+):
+
+    document = documents_collection.find_one(
+        {
+            "_id": ObjectId(document_id),
+            "user_id": str(current_user["_id"])
+        }
+    )
+
+    if document is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Document not found"
+        )
+
+    if os.path.exists(document["filepath"]):
+        os.remove(document["filepath"])
+
+    documents_collection.delete_one(
+        {
+            "_id": ObjectId(document_id)
+        }
+    )
+
+    return {
+        "message": "Document deleted successfully"
+    }
+@router.put("/{document_id}")
+def rename_document(
+    document_id: str,
+    data: RenameDocument,
+    current_user=Depends(get_current_user)
+):
+
+    document = documents_collection.find_one(
+        {
+            "_id": ObjectId(document_id),
+            "user_id": str(current_user["_id"])
+        }
+    )
+
+    if document is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Document not found"
+        )
+
+    documents_collection.update_one(
+        {
+            "_id": ObjectId(document_id)
+        },
+        {
+            "$set": {
+                "filename": data.filename
+            }
+        }
+    )
+
+    return {
+        "message": "Document renamed successfully"
+    }

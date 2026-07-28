@@ -3,3 +3,4 @@ mygpt/
 __pycache__/
 *.py[cod]
 *.pyc
+user_creds.txt

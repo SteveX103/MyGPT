@@ -1,5 +1,10 @@
 from pydantic import BaseModel
 from datetime import datetime
+from pydantic import BaseModel
+
+
+class RenameDocument(BaseModel):
+    filename: str
 
 
 class DocumentResponse(BaseModel):
