@@ -6,6 +6,8 @@ from routes.user_routes import router as user_router
 
 from routes.document_routes import router as document_router
 
+from routes.knowledge_base_routes import router as knowledge_router
+
 app = FastAPI(
     title="PrivateGPT Enterprise API"
 )
@@ -38,4 +40,9 @@ app.include_router(
     document_router,
     prefix="/documents",
     tags=["Documents"]
+)
+app.include_router(
+    knowledge_router,
+    prefix="/knowledge-bases",
+    tags=["Knowledge Bases"]
 )

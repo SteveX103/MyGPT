@@ -206,3 +206,4 @@ def rename_document(
     return {
         "message": "Document renamed successfully"
     }
+

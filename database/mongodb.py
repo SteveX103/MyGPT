@@ -8,3 +8,4 @@ db = client[DATABASE_NAME]
 
 users_collection = db["users"]
 documents_collection = db["documents"]
+knowledge_base_collection = db["knowledge_bases"]
