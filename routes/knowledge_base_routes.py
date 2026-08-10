@@ -57,3 +57,14 @@ def create_knowledge_base(
         "name": data.name,
         "description": data.description
     }
+
+@router.post("/")
+def create_knowledge_base_route(
+    data: CreateKnowledgeBase,
+    current_user=Depends(get_current_user)
+):
+
+    return create_knowledge_base(
+        data,
+        current_user
+    )
