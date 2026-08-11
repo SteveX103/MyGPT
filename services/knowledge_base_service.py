@@ -57,3 +57,28 @@ def create_knowledge_base(data, current_user):
         "name": data.name,
         "description": data.description
     }
+def get_knowledge_bases(current_user):
+
+    user_id = str(current_user["_id"])
+
+    knowledge_bases = knowledge_base_collection.find(
+        {
+            "user_id": user_id
+        }
+    ).sort(
+        "created_at",
+        -1
+    )
+
+    result = []
+
+    for kb in knowledge_bases:
+
+        result.append({
+            "id": str(kb["_id"]),
+            "name": kb["name"],
+            "description": kb.get("description"),
+            "created_at": kb["created_at"]
+        })
+
+    return result

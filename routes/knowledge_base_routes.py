@@ -10,6 +10,10 @@ from database.mongodb import knowledge_base_collection
 
 from models.knowledge_base_model import CreateKnowledgeBase
 
+from services.knowledge_base_service import (
+    create_knowledge_base,
+    get_knowledge_bases
+)
 router = APIRouter()
 
 UPLOAD_DIR = Path("uploads")
@@ -68,3 +72,9 @@ def create_knowledge_base_route(
         data,
         current_user
     )
+@router.get("/")
+def list_knowledge_bases(
+    current_user=Depends(get_current_user)
+):
+
+    return get_knowledge_bases(current_user)
