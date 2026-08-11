@@ -12,8 +12,9 @@ from models.knowledge_base_model import CreateKnowledgeBase
 
 from services.knowledge_base_service import (
     create_knowledge_base,
-    get_knowledge_bases
+    get_knowledge_base
 )
+
 router = APIRouter()
 
 UPLOAD_DIR = Path("uploads")
@@ -77,4 +78,15 @@ def list_knowledge_bases(
     current_user=Depends(get_current_user)
 ):
 
-    return get_knowledge_bases(current_user)
+    return get_knowledge_base(current_user)
+
+@router.get("/{knowledge_base_id}")
+def get_knowledge_base_route(
+    knowledge_base_id: str,
+    current_user=Depends(get_current_user)
+):
+
+    return get_knowledge_base(
+        knowledge_base_id,
+        current_user
+    )

@@ -1,6 +1,6 @@
 from pathlib import Path
 from datetime import datetime
-
+from bson import ObjectId
 from fastapi import HTTPException
 
 from database.mongodb import knowledge_base_collection
@@ -57,28 +57,35 @@ def create_knowledge_base(data, current_user):
         "name": data.name,
         "description": data.description
     }
-def get_knowledge_bases(current_user):
-
+def get_knowledge_base(
+    knowledge_base_id: str,
+    current_user
+):
     user_id = str(current_user["_id"])
 
-    knowledge_bases = knowledge_base_collection.find(
-        {
-            "user_id": user_id
-        }
-    ).sort(
-        "created_at",
-        -1
-    )
+    try:
+        kb_object_id = ObjectId(knowledge_base_id)
+    except Exception:
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid knowledge base ID"
+        )
 
-    result = []
+    knowledge_base = knowledge_base_collection.find_one({
+        "_id": kb_object_id,
+        "user_id": user_id
+    })
 
-    for kb in knowledge_bases:
+    if knowledge_base is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Knowledge base not found"
+        )
 
-        result.append({
-            "id": str(kb["_id"]),
-            "name": kb["name"],
-            "description": kb.get("description"),
-            "created_at": kb["created_at"]
-        })
+    return {
+        "id": str(knowledge_base["_id"]),
+        "name": knowledge_base["name"],
+        "description": knowledge_base.get("description"),
+        "created_at": knowledge_base["created_at"]
+    }
 
-    return result
