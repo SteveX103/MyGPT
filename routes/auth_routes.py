@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException
 
 from database.mongodb import users_collection
 
-from models.user_model import RegisterUser, LoginUser
+from models.user_model import RegisterUser
 
 from auth.password_handler import (
     hash_password,
@@ -11,8 +11,8 @@ from auth.password_handler import (
 
 from auth.jwt_handler import create_access_token
 
+from models.user_model import LoginUser
 router = APIRouter()
-
 
 @router.post("/register")
 def register(user: RegisterUser):
