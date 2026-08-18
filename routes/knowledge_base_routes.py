@@ -8,11 +8,12 @@ from auth.dependencies import get_current_user
 
 from database.mongodb import knowledge_base_collection
 
-from models.knowledge_base_model import CreateKnowledgeBase
+from models.knowledge_base_model import CreateKnowledgeBase , UpdateKnowledgeBase
 
 from services.knowledge_base_service import (
     create_knowledge_base,
-    get_knowledge_base
+    get_knowledge_base,
+    update_knowledge_base
 )
 
 router = APIRouter()
@@ -88,5 +89,17 @@ def get_knowledge_base_route(
 
     return get_knowledge_base(
         knowledge_base_id,
+        current_user
+    )
+@router.put("/{knowledge_base_id}")
+def update_knowledge_base_route(
+    knowledge_base_id: str,
+    data: UpdateKnowledgeBase,
+    current_user=Depends(get_current_user)
+):
+
+    return update_knowledge_base(
+        knowledge_base_id,
+        data,
         current_user
     )
