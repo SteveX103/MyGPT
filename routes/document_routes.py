@@ -150,15 +150,47 @@ def list_documents(
 @router.get("/{document_id}")
 def get_document(
     document_id: str,
+    knowledge_base_id: str,
     current_user=Depends(get_current_user)
 ):
+    user_id = str(current_user["_id"])
 
-    document = documents_collection.find_one(
-        {
-            "_id": ObjectId(document_id),
-            "user_id": str(current_user["_id"])
-        }
-    ) 
+    # Validate document ID
+    try:
+        document_object_id = ObjectId(document_id)
+    except Exception:
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid document ID"
+        )
+
+    # Validate knowledge base ID
+    try:
+        kb_object_id = ObjectId(knowledge_base_id)
+    except Exception:
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid knowledge base ID"
+        )
+
+    # Verify KB belongs to current user
+    knowledge_base = knowledge_base_collection.find_one({
+        "_id": kb_object_id,
+        "user_id": user_id
+    })
+
+    if knowledge_base is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Knowledge base not found"
+        )
+
+    # Find document inside this KB
+    document = documents_collection.find_one({
+        "_id": document_object_id,
+        "user_id": user_id,
+        "knowledge_base_id": knowledge_base_id
+    })
 
     if document is None:
         raise HTTPException(
@@ -168,23 +200,59 @@ def get_document(
 
     return {
         "id": str(document["_id"]),
-        "filename": document["filename"],
+        "filename": document.get(
+            "original_filename",
+            document.get("filename")
+        ),
         "file_size": document["file_size"],
         "content_type": document["content_type"],
+        "status": document.get("status", "uploaded"),
         "uploaded_at": document["uploaded_at"]
     }
 @router.get("/{document_id}/download")
 def download_document(
     document_id: str,
+    knowledge_base_id: str,
     current_user=Depends(get_current_user)
 ):
+    user_id = str(current_user["_id"])
 
-    document = documents_collection.find_one(
-        {
-            "_id": ObjectId(document_id),
-            "user_id": str(current_user["_id"])
-        }
-    )
+    # Validate document ID
+    try:
+        document_object_id = ObjectId(document_id)
+    except Exception:
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid document ID"
+        )
+
+    # Validate knowledge base ID
+    try:
+        kb_object_id = ObjectId(knowledge_base_id)
+    except Exception:
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid knowledge base ID"
+        )
+
+    # Verify KB ownership
+    knowledge_base = knowledge_base_collection.find_one({
+        "_id": kb_object_id,
+        "user_id": user_id
+    })
+
+    if knowledge_base is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Knowledge base not found"
+        )
+
+    # Find document belonging to this user + KB
+    document = documents_collection.find_one({
+        "_id": document_object_id,
+        "user_id": user_id,
+        "knowledge_base_id": knowledge_base_id
+    })
 
     if document is None:
         raise HTTPException(
@@ -192,9 +260,22 @@ def download_document(
             detail="Document not found"
         )
 
+    file_path = Path(document["filepath"])
+
+    if not file_path.exists():
+        raise HTTPException(
+            status_code=404,
+            detail="Physical file not found"
+        )
+
+    original_filename = document.get(
+        "original_filename",
+        document.get("filename")
+    )
+
     return FileResponse(
-        path=document["filepath"],
-        filename=document["filename"],
+        path=str(file_path),
+        filename=original_filename,
         media_type=document["content_type"]
     )
 @router.delete("/{document_id}")
