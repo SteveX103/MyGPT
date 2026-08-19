@@ -281,15 +281,47 @@ def download_document(
 @router.delete("/{document_id}")
 def delete_document(
     document_id: str,
+    knowledge_base_id: str,
     current_user=Depends(get_current_user)
 ):
+    user_id = str(current_user["_id"])
 
-    document = documents_collection.find_one(
-        {
-            "_id": ObjectId(document_id),
-            "user_id": str(current_user["_id"])
-        }
-    )
+    # Validate document ID
+    try:
+        document_object_id = ObjectId(document_id)
+    except Exception:
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid document ID"
+        )
+
+    # Validate knowledge base ID
+    try:
+        kb_object_id = ObjectId(knowledge_base_id)
+    except Exception:
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid knowledge base ID"
+        )
+
+    # Verify KB belongs to current user
+    knowledge_base = knowledge_base_collection.find_one({
+        "_id": kb_object_id,
+        "user_id": user_id
+    })
+
+    if knowledge_base is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Knowledge base not found"
+        )
+
+    # Find document belonging to user + KB
+    document = documents_collection.find_one({
+        "_id": document_object_id,
+        "user_id": user_id,
+        "knowledge_base_id": knowledge_base_id
+    })
 
     if document is None:
         raise HTTPException(
@@ -297,14 +329,18 @@ def delete_document(
             detail="Document not found"
         )
 
-    if os.path.exists(document["filepath"]):
-        os.remove(document["filepath"])
+    # Delete physical file
+    file_path = Path(document["filepath"])
 
-    documents_collection.delete_one(
-        {
-            "_id": ObjectId(document_id)
-        }
-    )
+    if file_path.exists():
+        file_path.unlink()
+
+    # Delete MongoDB metadata
+    documents_collection.delete_one({
+        "_id": document_object_id,
+        "user_id": user_id,
+        "knowledge_base_id": knowledge_base_id
+    })
 
     return {
         "message": "Document deleted successfully"
