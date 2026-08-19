@@ -2,9 +2,12 @@ from pathlib import Path
 from datetime import datetime
 from bson import ObjectId
 from fastapi import HTTPException
-
+import shutil
 from database.mongodb import knowledge_base_collection
-
+from database.mongodb import (
+    knowledge_base_collection,
+    documents_collection
+)
 
 UPLOAD_DIR = Path("uploads")
 
@@ -171,4 +174,55 @@ def update_knowledge_base(
         "name": updated["name"],
         "description": updated.get("description"),
         "created_at": updated["created_at"]
+    }
+def delete_knowledge_base(
+    knowledge_base_id: str,
+    current_user
+):
+    user_id = str(current_user["_id"])
+
+    try:
+        kb_object_id = ObjectId(knowledge_base_id)
+    except Exception:
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid knowledge base ID"
+        )
+
+    knowledge_base = knowledge_base_collection.find_one({
+        "_id": kb_object_id,
+        "user_id": user_id
+    })
+
+    if knowledge_base is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Knowledge base not found"
+        )
+
+    # Knowledge base folder
+    kb_folder = (
+        UPLOAD_DIR
+        / user_id
+        / f"kb_{knowledge_base_id}"
+    )
+
+    # Delete physical files
+    if kb_folder.exists():
+        shutil.rmtree(kb_folder)
+
+    # Delete documents belonging to this KB
+    documents_collection.delete_many({
+        "user_id": user_id,
+        "knowledge_base_id": knowledge_base_id
+    })
+
+    # Delete knowledge base
+    knowledge_base_collection.delete_one({
+        "_id": kb_object_id,
+        "user_id": user_id
+    })
+
+    return {
+        "message": "Knowledge base deleted successfully"
     }

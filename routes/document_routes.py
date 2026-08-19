@@ -7,7 +7,12 @@ from fastapi.responses import FileResponse
 from auth.dependencies import get_current_user
 from database.mongodb import documents_collection
 from models.document_model import RenameDocument
+from auth.dependencies import get_current_user
 
+from database.mongodb import (
+    documents_collection,
+    knowledge_base_collection
+)
 router = APIRouter()
 
 UPLOAD_DIR = Path("uploads")
@@ -15,10 +20,14 @@ UPLOAD_DIR = Path("uploads")
 
 @router.post("/upload")
 async def upload_document(
+    knowledge_base_id: str = Form(...),
     file: UploadFile = File(...),
     current_user=Depends(get_current_user)
 ):
 
+    user_id = str(current_user["_id"])
+
+    # Validate file extension
     allowed_extensions = {
         ".pdf",
         ".docx",
@@ -33,31 +42,78 @@ async def upload_document(
             detail="Unsupported file type"
         )
 
-    user_id = str(current_user["_id"])
+    # Validate Knowledge Base ID
+    try:
+        kb_object_id = ObjectId(knowledge_base_id)
 
-    user_folder = UPLOAD_DIR / user_id
-    user_folder.mkdir(parents=True, exist_ok=True)
+    except Exception:
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid knowledge base ID"
+        )
 
-    file_path = user_folder / file.filename
+    # Verify that the KB belongs to the logged-in user
+    knowledge_base = knowledge_base_collection.find_one({
+        "_id": kb_object_id,
+        "user_id": user_id
+    })
 
+    if knowledge_base is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Knowledge base not found"
+        )
+
+    # Create KB-specific folder
+    kb_folder = (
+        UPLOAD_DIR
+        / user_id
+        / f"kb_{knowledge_base_id}"
+    )
+
+    kb_folder.mkdir(
+        parents=True,
+        exist_ok=True
+    )
+
+    # Generate unique stored filename
+    stored_filename = (
+        f"{uuid.uuid4()}{extension}"
+    )
+
+    file_path = kb_folder / stored_filename
+
+    # Save physical file
     with open(file_path, "wb") as buffer:
         buffer.write(await file.read())
 
+    # Store metadata
     document = {
         "user_id": user_id,
-        "filename": file.filename,
+        "knowledge_base_id": knowledge_base_id,
+
+        "original_filename": file.filename,
+        "stored_filename": stored_filename,
+
         "filepath": str(file_path),
+
         "file_size": file_path.stat().st_size,
         "content_type": file.content_type,
+
+        "status": "uploaded",
+
         "uploaded_at": datetime.utcnow()
     }
 
-    result = documents_collection.insert_one(document)
+    result = documents_collection.insert_one(
+        document
+    )
 
     return {
         "message": "File uploaded successfully",
         "document_id": str(result.inserted_id),
-        "filename": file.filename
+        "filename": file.filename,
+        "knowledge_base_id": knowledge_base_id
     }
 @router.get("/")
 def list_documents(

@@ -12,8 +12,10 @@ from models.knowledge_base_model import CreateKnowledgeBase , UpdateKnowledgeBas
 
 from services.knowledge_base_service import (
     create_knowledge_base,
+    get_knowledge_bases,
     get_knowledge_base,
-    update_knowledge_base
+    update_knowledge_base,
+    delete_knowledge_base
 )
 
 router = APIRouter()
@@ -101,5 +103,15 @@ def update_knowledge_base_route(
     return update_knowledge_base(
         knowledge_base_id,
         data,
+        current_user
+    )
+@router.delete("/{knowledge_base_id}")
+def delete_knowledge_base_route(
+    knowledge_base_id: str,
+    current_user=Depends(get_current_user)
+):
+
+    return delete_knowledge_base(
+        knowledge_base_id,
         current_user
     )
