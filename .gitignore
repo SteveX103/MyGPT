@@ -4,3 +4,4 @@ __pycache__/
 *.py[cod]
 *.pyc
 user_creds.txt
+chroma_db/
