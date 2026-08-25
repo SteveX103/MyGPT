@@ -8,10 +8,13 @@ from auth.dependencies import get_current_user
 from database.mongodb import documents_collection
 from models.document_model import RenameDocument
 from auth.dependencies import get_current_user
-
+from fastapi import BackgroundTasks
 from database.mongodb import (
     documents_collection,
     knowledge_base_collection
+)
+from services.document_processing_service import (
+    process_document
 )
 router = APIRouter()
 
@@ -20,6 +23,7 @@ UPLOAD_DIR = Path("uploads")
 
 @router.post("/upload")
 async def upload_document(
+    background_tasks: BackgroundTasks,
     knowledge_base_id: str = Form(...),
     file: UploadFile = File(...),
     current_user=Depends(get_current_user)
@@ -110,10 +114,11 @@ async def upload_document(
     )
 
     return {
-        "message": "File uploaded successfully",
-        "document_id": str(result.inserted_id),
-        "filename": file.filename,
-        "knowledge_base_id": knowledge_base_id
+    "message": "File uploaded successfully",
+    "document_id": str(result.inserted_id),
+    "filename": file.filename,
+    "knowledge_base_id": knowledge_base_id,
+    "status": "processing"
     }
 @router.get("/")
 def list_documents(
