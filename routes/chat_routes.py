@@ -5,8 +5,10 @@ from auth.dependencies import get_current_user
 from models.chat_model import CreateChatSession
 
 from services.chat_service import (
-    create_chat_session
+    create_chat_session,
+    get_user_chat_sessions
 )
+
 
 
 router = APIRouter()
@@ -19,5 +21,12 @@ def create_session(
 ):
     return create_chat_session(
         data,
+        current_user
+    )
+@router.get("/sessions")
+def get_sessions(
+    current_user=Depends(get_current_user)
+):
+    return get_user_chat_sessions(
         current_user
     )
