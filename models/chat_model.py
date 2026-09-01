@@ -8,3 +8,7 @@ class CreateChatSession(BaseModel):
 
 class UpdateChatSession(BaseModel):
     title: str
+
+
+class CreateChatMessage(BaseModel):
+    content: str
